@@ -1,7 +1,7 @@
 # elk_toolbox
 ----------------
 ## python elk_bulk_convert_csv.py
-**Goal** : Purpose of the program    
+**Goal** : Convert a CSV file into a file usabel with ELK Dev Tools    
 **Usage:** python elk_bulk_convert_csv.py [option]     
        CSV file must be:     
         - First line = header with fields to add     
