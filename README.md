@@ -14,4 +14,4 @@
   -f | --infile     Input csv file name - Mandatory    
   -o | --outfile    Output file for drag and drop in DEV ELK, if empty output is Console     
 Exemple:    
-```python elk_bulk_convert_csv.py -f "C:\\temp\\file.csv" -v```    
+```python elk_bulk_convert_csv.py -f ./datafile.csv -v```    
