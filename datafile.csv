@@ -1,9 +1,9 @@
 index;action;id;type;scope;value;category;crit_priority;crit_value;warn_priority;warn_value
-threshold;update;C7kHHX4BdXAE8O9uODn0;cpu;SERVEUR0;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
-threshold;update;CbkHHX4BdXAE8O9uODn0;cpu;SERVEUR1;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
+threshold;create;;cpu;SERVEUR0;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
+threshold;create;;cpu;SERVEUR1;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
 threshold;update;CLkHHX4BdXAE8O9uODn0;cpu;SERVEUR2;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
 threshold;update;CrkHHX4BdXAE8O9uODn0;cpu;SERVEUR3;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
-threshold;update;D7kHHX4BdXAE8O9uODn0;cpu;SERVEUR4;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
+threshold;delete;D7kHHX4BdXAE8O9uODn0;cpu;SERVEUR4;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
 threshold;update;DbkHHX4BdXAE8O9uODn0;cpu;SERVEUR5;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
 threshold;update;DLkHHX4BdXAE8O9uODn0;cpu;SERVEUR6;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
 threshold;update;DrkHHX4BdXAE8O9uODn0;cpu;SERVEUR7;0.95;YO_YO;crit_priority;0.8;warn_priority;0.7
