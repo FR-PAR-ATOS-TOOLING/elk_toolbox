@@ -112,8 +112,11 @@ def main(argv):
                 print ("ERROR - Line ", line + 1, " of ", infilename, " ELK id is not empty")
                 exit (1)
             else:
-            # For create action even if id is given it will not be take into account
-              actionline = '{"create":{"_index":"'+ elk_index +'"}}'            
+            # For create action id could be empty or defined, if empty will be added by ELK
+              if ( elk_id == "" ): 
+                actionline = '{"create":{"_index":"'+ elk_index +'"}}'
+              else:
+                actionline = '{"create":{"_index":"'+ elk_index +'","_id":"'+ elk_id +'"}}'              
           else:
           # For update or create we create the second line of data require by the ELK Bulk API
             tmpline = tmpline + "\"" + frstl[i] + "\":\"" + col + "\","
