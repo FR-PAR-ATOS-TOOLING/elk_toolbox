@@ -5,8 +5,8 @@ Convert a CSV file into a file usable with ELK Dev Tools or update ELK index dir
 
 **Prereq**   
 CSV file must be:     
--- First line = header with fields to add     
--- First column = ELK index to update     
+: - First line = header with fields to add     
+: - First column = ELK index to update     
 -- Second column = action: create, update, delete or empty     
 (if empty and -u is selected the line will become 'update')    
 -- Third column = ELK doc id mandatory for update and delete    
