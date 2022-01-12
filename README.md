@@ -1,6 +1,6 @@
 # elk_toolbox
 ## python elk_bulk_convert_csv.py
-**Goal**   
+**Purpose**   
 Convert a CSV file into a file usable with ELK Dev Tools or update ELK index directly     
 
 **Prereq**   
@@ -25,3 +25,8 @@ Exemple:
 ```
 python elk_bulk_convert_csv.py -f "C:\\temp\\file.csv" -v -o out.out -u -k tyyvhbkjvhcgchfc -t https://localhost:9200 -c ca.crt
 ```    
+
+## ELK_Query_API.sh
+**Purpose**
+Make a search with ELK API to extract the result in a JSON file.
+Allow search and extract of more than 10.000 records by the use of "search_after" and Point In Time (PIT) ELK mechanism.
