@@ -1,9 +1,9 @@
 # elk_toolbox
 ## python elk_bulk_convert_csv.py
-**Purpose**   
+**Purpose:**   
 Convert a CSV file into a file usable with ELK Dev Tools or update ELK index directly     
 
-**Prereq**   
+**Prereq:**   
 CSV file must be:     
 - First line = header with fields to add     
 - First column = ELK index to update     
