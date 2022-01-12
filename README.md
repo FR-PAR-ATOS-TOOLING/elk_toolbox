@@ -26,7 +26,7 @@ Exemple:
 python elk_bulk_convert_csv.py -f "C:\\temp\\file.csv" -v -o out.out -u -k tyyvhbkjvhcgchfc -t https://localhost:9200 -c ca.crt
 ```    
 
-## ELK_Query_API.sh
-**Purpose**
-Make a search with ELK API to extract the result in a JSON file.
-Allow search and extract of more than 10.000 records by the use of "search_after" and Point In Time (PIT) ELK mechanism.
+## ELK_Query_API.sh     
+**Purpose**     
+Make a search with ELK API to extract the result in a JSON file.    
+Allow search and extract of more than 10.000 records by the use of "search_after" and Point In Time (PIT) ELK mechanism.    
