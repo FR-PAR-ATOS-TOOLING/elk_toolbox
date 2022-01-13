@@ -196,7 +196,7 @@ def main(argv):
     # Run of a curl command line with the bulk API. JSON ELK answer will be store into file curl.out
     os.system(cmdline)
     curlout = open('curl.out')
-    # Xe load the ELK JSON answer of the bulk API request
+    # We load the ELK JSON answer of the bulk API request
     data = json.load(curlout)
     # We open the CSV file and load it inside a Panda DataFrame structure in memory
     df = pd.read_csv(infilename, sep=';')
