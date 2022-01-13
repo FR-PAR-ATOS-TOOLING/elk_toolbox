@@ -48,9 +48,9 @@ verbose = 0				   # 1 for debugging mode
 infilename = "test.csv"    # CSV file with ';' separator
 outfilename = ""           # File with he bulk api command line to past and cut to ELK Dev Tool
 update = 0                 # 1 for update ELK index
-elkkey = "VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ=="
+elkkey = ""
 cacert = ""
-url = "https://duriez92.ddns.net:9200"
+url = ""
 outfile = ""
 ###########################################################
 # Def section - function
