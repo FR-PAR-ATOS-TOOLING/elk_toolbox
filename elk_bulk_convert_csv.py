@@ -6,16 +6,16 @@
 Goal : Convert a CSV file into a file usable with ELK Dev Tools  
 Usage: python elk_bulk_convert_csv.py [Options]
        CSV file must be:
-        - First line = header with fields to add
-        - First column = ELK index to update
-        - Second column = action: create, update, delete or empty
+        - First line = header with mandatory fields: index, action and _id in this order
+        - First column "index" = ELK index to update
+        - Second column "action" = action: create, update, delete or empty
                           if empty and -u is selected the line will become 'update'
-        - Third column = ELK doc id mandatory for update, delete or empty
+        - Third column "_id" = ELK doc id mandatory for update, delete or empty
 
 Options:
   -? | --help	    Show this help
   -v | --verbose    Print to output some messages for debuging
-  -f | --infile     Input csv file name - Mandatory
+  -f | --infile     Input file name .csv (; separator) or .xlsx - Mandatory
   -o | --outfile    Output file for drag and drop in DEV ELK, if empty output is Console
   -u | --update     Update the ELK index in the cluster node
   -c | --cacert     ca.crt file for https ELK access [Mandatory if -u]
@@ -48,10 +48,12 @@ verbose = 0				   # 1 for debugging mode
 infilename = "test.csv"    # CSV file with ';' separator
 outfilename = ""           # File with he bulk api command line to past and cut to ELK Dev Tool
 update = 0                 # 1 for update ELK index
-elkkey = ""
+elkkey = "VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ=="
 cacert = ""
-url = ""
+url = "https://duriez92.ddns.net:9200"
 outfile = ""
+CSVFILE = 0
+EXCELFILE = 0
 ###########################################################
 # Def section - function
 
@@ -107,8 +109,39 @@ def inputvar(argv):
 ## Function main
 def main(argv):
   inputvar(argv)
+  # Check input file be compliant
+  if ".csv" in infilename:
+    # Open CSV file and store it inside a dataframe panda structure
+    df = pd.read_csv(infilename, sep=';', keep_default_na=False)
+  elif ".xlsx" in infilename:
+    # Open Excel file and store it inside a dataframe panda structure
+    df = pd.read_excel(infilename, keep_default_na=False)
+  else:
+    print ("ERROR Input file must be .csv or .xlsx")
+    exit (1)
+    
+  # Check required column name and order
+  if 'index' not in df.columns[0].lower():
+    print ("ERROR First column of input file is not 'index'")
+    exit (1)
+  if 'action' not in df.columns[1].lower():
+    print ("ERROR Second column of input file is not 'action'")
+    exit (1)
+  if '_id' not in df.columns[2]:
+    print ("ERROR Third column of input file is not '_id'")
+    exit (1)
+
+  total_line = df.shape[0]
+  total_col = df.shape[1]
+  if (verbose):
+    print ("[DEBUG]Number of lines   = ", total_line)
+    print ("[DEBUG]Number of columns = ", total_col)
+    print ("-------------------------------------------")
+
+  # Setup the output file if requested
   if ( outfilename != '' ):
     outfile = open (outfilename,'w')
+
   if (update):
     # tmpfile is used to store the curl data for ELK update
     tmpfilename = infilename + ".tmp"
@@ -119,75 +152,87 @@ def main(argv):
   empty_action = False
   line = 0
   # We open the CSV file and we are going to read it line by line
-  with open(infilename, newline='') as infile:
-    reader = csv.reader(infile, delimiter=';')
-    if (outfilename != '' ):
-      outfile.write ('POST _bulk\n')
-    for row in reader:
-      if (line == 0 ):
-      # First line of CSV file is the columns name
-        firstline = row
+  if (outfilename != '' ):
+    outfile.write ('POST _bulk')
+  
+  while line < total_line:
+    # For each line we build the bulk API line for ELK
+    first_line = ""         # to define if it's an update, create or delete
+    second_line = "{"       # to setup all the fields after _id not used for delete
+    empty_action = False    # When action is not one of the 3 it won't be take into account
+    # CREATE
+    if ( df.iloc[line,1] == 'create' ):
+      if ( df.iloc[line,2] == '' ):
+        first_line = '\n{"create" : {"_index":"'+ str(df.iloc[line,0]) +'"}}'
       else:
-      # We read each line colums by colums to create the bulk line
-        i = 0
-        tmpline = "{"
-        actionline = ""   # actionline is used to define if it's an update, create or delete
-        for col in row:
-          if ( i == 0 ):
-          # ELK target index must be the first column
-            elk_index = col
-          elif ( i == 1 ):
-           # ELK action must be the second column and must be create, delete or update. If empty = update
-           elk_action = col
-          elif ( i == 2 ):
-            elk_id = col
-            if ( elk_action == '' ):
-              elk_action = 'update'
-              empty_action = True              
-            if ( elk_action == 'delete' or elk_action == 'update'):
-            # For delete or update, id on the ELK record is mandatory in colums 3
-              actionline = '{"'+ elk_action +'":{"_index":"'+ elk_index +'","_id":"'+ elk_id +'"}}'
-              if ( elk_id == "" ):
-                print ("ERROR - Line ", line + 1, " of ", infilename, " ELK id is not empty")
-                exit (1)
-            else:
-            # For create action id could be empty or defined, if empty it will be added by ELK during creation
-              if ( elk_id == "" ): 
-                actionline = '{"create":{"_index":"'+ elk_index +'"}}'
-              else:
-                actionline = '{"create":{"_index":"'+ elk_index +'","_id":"'+ elk_id +'"}}'              
-          else:
-          # For update or create, we put a second line of data require by the ELK Bulk API
-            tmpline = tmpline + "\"" + firstline[i] + "\":\"" + col + "\","
-          i+=1
-        txt = actionline + '\n'
-        if (outfilename != '' and not empty_action):
-          outfile.write ( txt )
-        if (update):
-          tmpfile.write( txt )
-        if ( elk_action == 'create' or elk_action == 'update'):
-        # Only for create and update action we create the second line of bulk API
-          size = len(tmpline)
-          outline = tmpline[:size - 1]
-          if ( elk_action == 'create'):
-            txt = outline + '}\n'
-            if (outfilename != '' ):
-              outfile.write ( txt )
-            if (update):
-              tmpfile.write( txt )
-          else:
-          # For update a special syntax is required at the begining
-            txt = '{ "doc" : ' + outline +'} }\n' 
-            if (outfilename != '' and not empty_action):
-              outfile.write ( txt )
-            if (update):
-              tmpfile.write( txt)
-            empty_action = False
-      line+=1
+        first_line = '\n{"create" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
+      second_line = '\n{'
+      col = 3
+      # Copy all remaining colums in the line
+      while col < total_col:
+        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        col+=1
+      # At the end we remove the last ',' and put '}'
+      size = len(second_line)
+      second_line = second_line[:size - 1] + '}'
+      if (outfilename != ''):
+        outfile.write ( first_line )
+        outfile.write ( second_line )
+      if (update):
+        tmpfile.write( first_line)
+        tmpfile.write( second_line)
+    # UPDATE
+    elif ( df.iloc[line,1] == 'update' ):
+      first_line = '\n{"update" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
+      second_line = '\n{"doc":{'
+      col = 3
+      # Copy all remaining colums in the line
+      while col < total_col:
+        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        col+=1
+      # At the end we remove the last ',' and put '}'
+      size = len(second_line)
+      second_line = second_line[:size - 1] + '} }'
+      if (outfilename != ''):
+         outfile.write ( first_line )
+         outfile.write ( second_line )
+      if (update):
+        tmpfile.write( first_line)
+        tmpfile.write( second_line)
+    # DELETE
+    elif ( df.iloc[line,1] == 'delete' ):
+      first_line = '\n{"delete" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
+      second_line = ''
+      if (outfilename != ''):
+        outfile.write ( first_line )
+      if (update):
+        tmpfile.write( first_line)
+    # OTHER
+    else:
+      # If action is emty or not equal to create, update or delete by default become update
+      empty_action = True
+      first_line = '\n{"update" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
+      second_line = '\n{ "doc" : {'
+      col = 3
+      # Copy all remaining colums in the line
+      while col < total_col:
+        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        col+=1
+      # At the end we remove the last ',' and put '}'
+      size = len(second_line)
+      second_line = second_line[:size - 1] + '} }'
+      if (update):
+        tmpfile.write( first_line)
+        tmpfile.write( second_line)     
+    line+=1
   
   if (outfilename != '' ):
+    outfile.write("\n")
     outfile.close()
+  
+  # ELK update step
   if (update):
+    tmpfile.write("\n")
     tmpfile.close()
     cmdline = 'curl -k -s --cacert ' + cacert + ' -H "Authorization: ApiKey ' + elkkey + '" -H "Content-Type: application/json" -X POST "'+ url +'/_bulk?pretty" --data-binary "@'+tmpfilename+'" > curl.out'
     if (verbose):
@@ -195,18 +240,19 @@ def main(argv):
       print ("-------------------------------------------")
     # Run of a curl command line with the bulk API. JSON ELK answer will be store into file curl.out
     os.system(cmdline)
+    # Open API respons in curl.out file
     curlout = open('curl.out')
     # We load the ELK JSON answer of the bulk API request
-    data = json.load(curlout)
-    # We open the CSV file and load it inside a Panda DataFrame structure in memory
-    df = pd.read_csv(infilename, sep=';')
-    # i is the CSV line
+    curl_data = json.load(curlout)
+    # Test if command failed
+    
+    # i is the CSV or Excel file line number
     i = 0
     # we read the JSON output answer to update _id if needed
-    for rec in data['items']:
+    for rec in curl_data['items']:
       recaction = list(rec)[0]
       if ( recaction == "create" or recaction == "update" ):
-        #print (recaction + ' => ' + rec[recaction]['_id'] + ' - line: ' + str(i) + ' / seq ' + str(rec[recaction]['_seq_no']))
+        # print (recaction + ' => ' + rec[recaction]['_id'] + ' - line: ' + str(i) + ' / seq ' + str(rec[recaction]['_seq_no']))
         # After execution, the action is moved to empty in the CSV file
         df.loc[i,'action'] = ""
         df.loc[i,'_id'] = rec[recaction]['_id']
@@ -215,17 +261,24 @@ def main(argv):
     indextodrop = df[ df['action'] == "delete"].index
     df.drop(indextodrop, inplace=True)
     # DataFrame is stored in a temporary CSV file named output.csv
-    df.to_csv("output.csv", index=False, sep=';')
+    if os.path.exists(infilename + '.bkp'):
+      os.remove(infilename + '.bkp')
+    os.rename(infilename,infilename + '.bkp')
+    if ".csv" in infilename:
+      # Open CSV file and store it inside a dataframe panda structure
+      df.to_csv(infilename, index=False, sep=';')
+    elif ".xlsx" in infilename:
+      # Open Excel file and store it inside a dataframe panda structure
+      df.to_excel(infilename, index=False)
     curlout.close()
-    os.remove("curl.out")
-    os.remove(tmpfilename)
-    infile.close()
-    os.remove(infilename)
     # Initial CSV file is replaced by the new one updated with _id or wit deleted lines removed
-    os.rename("output.csv", infilename)
     if (verbose):
       print ("[DEBUG] Update initial file" , infilename, " after ELK bulk update" )
+      print ("[DEBUG] files curl.out and ", tmpfilename , " not deleted")
       print ("-------------------------------------------")
+    else:
+      os.remove("curl.out")
+      os.remove(tmpfilename)
         
 
 ##########################################################
@@ -233,3 +286,4 @@ def main(argv):
 if __name__ == "__main__":
   main(sys.argv[1:])
 ######################### END ############################
+
