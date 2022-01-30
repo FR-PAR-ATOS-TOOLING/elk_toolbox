@@ -33,6 +33,7 @@ import os
 import os.path
 import glob
 import sys
+from datetime import datetime
 import getopt
 import string
 import shutil
@@ -94,21 +95,24 @@ def inputvar(argv):
     elif opt in ("-c","--cacert"):
       global cacert
       cacert = arg
-      
+
+##########################################################
+## Function main
+def main(argv):
+  inputvar(argv)
+  dirfile,var = os.path.split(infilename)
+  now = datetime.now()
   if (verbose):
     print ("------------------ START ------------------")
     print ("[DEBUG]file in \t= ", infilename)
     print ("[DEBUG]file out = ", outfilename)
+    print ("[DEBUG]directory = ", dirfile)
     print ("[DEBUG]update = ", update)
     print ("[DEBUG]url = ", url)
     print ("[DEBUG]key = ",elkkey)
     print ("[DEBUG]ca.crt file = ", cacert)
     print ("-------------------------------------------")
 
-##########################################################
-## Function main
-def main(argv):
-  inputvar(argv)
   # Check input file be compliant
   if ".csv" in infilename:
     # Open CSV file and store it inside a dataframe panda structure
@@ -244,8 +248,16 @@ def main(argv):
     curlout = open('curl.out')
     # We load the ELK JSON answer of the bulk API request
     curl_data = json.load(curlout)
-    # Test if command failed
-    
+    # Test if error encoutered
+    if ( 'error' in curl_data):
+      curlout.close()
+      errorfile = open (infilename+'.errlog','a')
+      #print ("[ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] "+str(curl_data['error']))
+      print ("[ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] "+str(curl_data['error']), file=errorfile)
+      os.remove("curl.out")
+      os.remove(tmpfilename)
+      errorfile.close()
+      exit(1)
     # i is the CSV or Excel file line number
     i = 0
     # we read the JSON output answer to update _id if needed
