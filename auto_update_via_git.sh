@@ -18,7 +18,7 @@ printf "[`date`] File check -----------------------------------------\n"
 for FIC in `find . -mmin -5 | grep "\.xlsx$\|\.csv$" | cut -d/ -f2`
 do
   printf "[`date`] - File $FIC\n"
-  /usr/local/bin/python3 /data/github/elk_toolbox/elk_bulk_convert_csv.py -f /data/github/elk_index_mgmt/$FIC -k VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ== -t "https://duriez92.ddns.net:9200" -c /etc/elasticsearch/certs/ca.crt -u 
+  /usr/local/bin/python3 /data/github/elk_toolbox/elk_bulk_convert.py -f $DIR_INDEX/$FIC -k VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ== -t "https://duriez92.ddns.net:9200" -c /etc/elasticsearch/certs/ca.crt -u 
 done
 
 printf "[`date`] Git push ------------------------------------------\n"
