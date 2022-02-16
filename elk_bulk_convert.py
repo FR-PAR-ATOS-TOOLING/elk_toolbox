@@ -3,7 +3,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Goal : Convert an Excel or a CSV file into a file usable with ELK Dev Tools  
+Goal : Convert an Excel or a CSV file into a file usable with ELK Dev Tools
 Usage: python elk_bulk_convert.py [Options]
        CSV file must be:
         - First line = header with mandatory fields: index, action and _id in this order
@@ -13,7 +13,7 @@ Usage: python elk_bulk_convert.py [Options]
         - Third column "_id" = ELK doc id mandatory for update, delete or empty
 
 Options:
-  -? | --help	    Show this help
+  -? | --help       Show this help
   -v | --verbose    Print to output some messages for debuging
   -f | --infile     Input file name .csv (; separator) or .xlsx - Mandatory
   -o | --outfile    Output file for drag and drop in DEV ELK, if empty output is Console
@@ -45,13 +45,13 @@ import pandas as pd
 
 ###########################################################
 # Global Variables
-verbose = 0				   # 1 for debugging mode
+verbose = 0                                # 1 for debugging mode
 infilename = "test.csv"    # CSV file with ';' separator
 outfilename = ""           # File with he bulk api command line to past and cut to ELK Dev Tool
 update = 0                 # 1 for update ELK index
-elkkey = "VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ=="
+elkkey = ""
 cacert = ""
-url = "https://duriez92.ddns.net:9200"
+url = ""
 outfile = ""
 CSVFILE = 0
 EXCELFILE = 0
@@ -103,7 +103,7 @@ def main(argv):
   dirfile,var = os.path.split(infilename)
   now = datetime.now()
   if (verbose):
-    print ("------------------ START ------------------")
+    print ("\n------------------ START : ",str(now.strftime("%d/%m/%Y %H:%M:%S"))," ----------------------------")
     print ("[DEBUG]file in \t= ", infilename)
     print ("[DEBUG]file out = ", outfilename)
     print ("[DEBUG]directory = ", dirfile)
@@ -111,7 +111,7 @@ def main(argv):
     print ("[DEBUG]url = ", url)
     print ("[DEBUG]key = ",elkkey)
     print ("[DEBUG]ca.crt file = ", cacert)
-    print ("-------------------------------------------")
+    print ("-----------------------------------------------------------------------------")
 
   # Check input file be compliant
   if ".csv" in infilename:
@@ -123,7 +123,7 @@ def main(argv):
   else:
     print ("ERROR Input file must be .csv or .xlsx")
     exit (1)
-    
+
   # Check required column name and order
   if 'index' not in df.columns[0].lower():
     print ("ERROR First column of input file is not 'index'")
@@ -138,9 +138,9 @@ def main(argv):
   total_line = df.shape[0]
   total_col = df.shape[1]
   if (verbose):
-    print ("[DEBUG]Number of lines   = ", total_line)
-    print ("[DEBUG]Number of columns = ", total_col)
-    print ("-------------------------------------------")
+    print ("[DEBUG]Number of lines   = ", total_line+1 )
+    print ("[DEBUG]Number of columns = ", total_col+1 )
+    print ("-----------------------------------------------------------------------------")
 
   # Setup the output file if requested
   if ( outfilename != '' ):
@@ -153,19 +153,19 @@ def main(argv):
     if ( cacert == ""):
       print ("ERROR missing parameter for ELK update")
       exit (1)
-  empty_action = False
   line = 0
+  nbr_update = 0
   # We open the CSV file and we are going to read it line by line
   if (outfilename != '' ):
     outfile.write ('POST _bulk')
-  
+
   while line < total_line:
     # For each line we build the bulk API line for ELK
     first_line = ""         # to define if it's an update, create or delete
     second_line = "{"       # to setup all the fields after _id not used for delete
-    empty_action = False    # When action is not one of the 3 it won't be take into account
     # CREATE
     if ( df.iloc[line,1] == 'create' ):
+      nbr_update+=1
       if ( df.iloc[line,2] == '' ):
         first_line = '\n{"create" : {"_index":"'+ str(df.iloc[line,0]) +'"}}'
       else:
@@ -174,7 +174,12 @@ def main(argv):
       col = 3
       # Copy all remaining colums in the line
       while col < total_col:
-        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        if not str(df.iloc[line,col]):
+          second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        elif ( str(df.iloc[line,col])[0].isdigit() ):
+          second_line = second_line + '"'+ str(df.columns[col]) +'":'+ str(df.iloc[line,col])+ ','
+        else:
+          second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
         col+=1
       # At the end we remove the last ',' and put '}'
       size = len(second_line)
@@ -187,12 +192,18 @@ def main(argv):
         tmpfile.write( second_line)
     # UPDATE
     elif ( df.iloc[line,1] == 'update' ):
+      nbr_update+=1
       first_line = '\n{"update" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
       second_line = '\n{"doc":{'
       col = 3
       # Copy all remaining colums in the line
       while col < total_col:
-        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        if not str(df.iloc[line,col]):
+          second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+        elif ( str(df.iloc[line,col])[0].isdigit() ):
+          second_line = second_line + '"'+ str(df.columns[col]) +'":'+ str(df.iloc[line,col])+ ','
+        else:
+          second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
         col+=1
       # At the end we remove the last ',' and put '}'
       size = len(second_line)
@@ -205,43 +216,31 @@ def main(argv):
         tmpfile.write( second_line)
     # DELETE
     elif ( df.iloc[line,1] == 'delete' ):
+      nbr_update+=1
       first_line = '\n{"delete" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
       second_line = ''
       if (outfilename != ''):
         outfile.write ( first_line )
       if (update):
         tmpfile.write( first_line)
-    # OTHER
-    else:
-      # If action is emty or not equal to create, update or delete by default become update
-      empty_action = True
-      first_line = '\n{"update" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
-      second_line = '\n{ "doc" : {'
-      col = 3
-      # Copy all remaining colums in the line
-      while col < total_col:
-        second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
-        col+=1
-      # At the end we remove the last ',' and put '}'
-      size = len(second_line)
-      second_line = second_line[:size - 1] + '} }'
-      if (update):
-        tmpfile.write( first_line)
-        tmpfile.write( second_line)     
     line+=1
-  
+
+  if (verbose):
+    print ("[DEBUG] Update requested (create/update/delete): ", nbr_update)
+    print ("-----------------------------------------------------------------------------")
+
   if (outfilename != '' ):
     outfile.write("\n")
     outfile.close()
-  
-  # ELK update step
-  if (update):
+
+  # ELK update step and modification of the Darafram to reflect API return JSON
+  if (update and nbr_update != 0):
     tmpfile.write("\n")
     tmpfile.close()
     cmdline = 'curl -k -s --cacert ' + cacert + ' -H "Authorization: ApiKey ' + elkkey + '" -H "Content-Type: application/json" -X POST "'+ url +'/_bulk?pretty" --data-binary "@'+tmpfilename+'" > curl.out'
     if (verbose):
       print ("[DEBUG] ", cmdline)
-      print ("-------------------------------------------")
+      print ("-----------------------------------------------------------------------------")
     # Run of a curl command line with the bulk API. JSON ELK answer will be store into file curl.out
     os.system(cmdline)
     # Open API respons in curl.out file
@@ -252,7 +251,7 @@ def main(argv):
     if ( 'error' in curl_data):
       curlout.close()
       errorfile = open (infilename+'.errlog','a')
-      #print ("[ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] "+str(curl_data['error']))
+      print ("[ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] "+str(curl_data['error']))
       print ("[ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] "+str(curl_data['error']), file=errorfile)
       os.remove("curl.out")
       os.remove(tmpfilename)
@@ -262,17 +261,16 @@ def main(argv):
     i = 0
     # we read the JSON output answer to update _id if needed
     for rec in curl_data['items']:
-      recaction = list(rec)[0]
-      if ( recaction == "create" or recaction == "update" ):
+      rec_action = list(rec)[0]
+      rec_id = str(rec[rec_action]['_id'])
+      if ( rec_action == "create" or rec_action == "update" ):
         # Check if error encountered
-        if ( str(rec[recaction]['status']) != "201" ):
-          print ('[ERROR-'+str(rec[recaction]['status'])+'] line '+ str(i+2) +' - _id: '+ str(rec[recaction]['_id'])+' Check if \ or \\\ - ('+ str(rec[recaction]['error']['caused_by']['reason'])+')')
-          df.loc[i,'action'] = "ERROR"
-          df.loc[i,'_id'] = rec[recaction]['_id']
+        if ( str(rec[rec_action]['status']) != "201" and str(rec[rec_action]['status']) != "200" ):
+          print ('[ERROR-'+str(rec[rec_action]['status'])+'] line '+ str(i+2) +' - _id: '+ str(rec[rec_action]['_id'])+' Check if \ or \\\ - ('+ str(rec[rec_action]['error']['caused_by']['reason'])+')')
+          df.loc[(df['_id'] == rec_id),'action'] = "ERROR"
         else:
-          # After execution, the action is moved to empty in the CSV file
-          df.loc[i,'action'] = ""
-          df.loc[i,'_id'] = rec[recaction]['_id']
+          # After execution, the action is moved to empty in dataframe line where _id value is the same in the curl.out _id
+          df.loc[(df['_id'] == rec_id),'action'] = ""
       i+=1
     # At the end we remove all deleted line from the DataFrame
     indextodrop = df[ df['action'] == "delete"].index
@@ -292,14 +290,16 @@ def main(argv):
     if (verbose):
       print ("[DEBUG] Update initial file" , infilename, " after ELK bulk update" )
       print ("[DEBUG] files curl.out and ", tmpfilename , " not deleted")
-      print ("-------------------------------------------")
     else:
       os.remove("curl.out")
       os.remove(tmpfilename)
-        
+  if (verbose):
+    print ("------------------- END: ",str(now.strftime("%d/%m/%Y %H:%M:%S")),"  -----------------------------")
+
 
 ##########################################################
 ## Program
 if __name__ == "__main__":
   main(sys.argv[1:])
 ######################### END ############################
+
