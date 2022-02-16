@@ -8,7 +8,9 @@
 #####################################################################
 
 #------------------ Global Variables --------------------------------
-DIR_INDEX="/data/github/elk_index_mgmt"
+DIR_INDEX="DIRECTORY_SYNCHRO_WITH_GIT"
+APIKEY="API_KEY_TO_THE_TARGET_INDEX"
+ELKSRV="NODE_OF-THE_ELK_CLUSTER"
 
 #------------------------ Main --------------------------------------
 cd $DIR_INDEX
@@ -18,7 +20,8 @@ printf "[`date`] File check -----------------------------------------\n"
 for FIC in `find . -mmin -5 | grep "\.xlsx$\|\.csv$" | cut -d/ -f2`
 do
   printf "[`date`] - File $FIC\n"
-  /usr/local/bin/python3 /data/github/elk_toolbox/elk_bulk_convert.py -f $DIR_INDEX/$FIC -k VVFZMUozNEJkWEFFOE85dS1McGM6NEdXVUVPQW1UTS1XeG9xcUNsWnNPUQ== -t "https://duriez92.ddns.net:9200" -c /etc/elasticsearch/certs/ca.crt -u 
+  /usr/bin/python3 /data/atos_gitlab/elk_bulk_convert.py -f $DIR_INDEX/$FIC -k $APIKEY -t "https://$ELKSRV:9200" -c $DIR_INDEX/../ca-nephos.crt -u -v
+  sleep 2
 done
 
 printf "[`date`] Git push ------------------------------------------\n"
