@@ -23,7 +23,7 @@ For Excel extension must be *.xlsx*
 > Written with [StackEdit](https://stackedit.io/).
 
 # elk_toolbox
-## python elk_bulk_convert_csv.py
+## python elk_bulk_convert.py
 **Goal**   
 Convert a CSV file into a file usable with ELK Dev Tools or update ELK index directly     
 
