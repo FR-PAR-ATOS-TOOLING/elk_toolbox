@@ -1,21 +1,21 @@
 # Toolbox to manage an ELK index with CSV or Excel files
 
 ## Technical architecture
-This solution needs:    
-- A GIT space to store the Excel or CSV files
-- A Linux system able to access to the target ELK cluster and to GIT system
-- An ELK cluster where the index will be store
-- 2 scripts:
-  * elk_bulk_convert.py to convert a CSV or Excel file into ELK API
-  * auto_update_via_git.sh to run by CRON and pull new files from GIT    
+This solution needs:     
+- A GIT space to store the Excel or CSV files     
+- A Linux system able to access to the target ELK cluster and to GIT system     
+- An ELK cluster where the index will be store     
+- 2 scripts:     
+  * elk_bulk_convert.py to convert a CSV or Excel file into ELK API     
+  * auto_update_via_git.sh to run by CRON and pull new files from GIT       
 
 ## Setup the solution      
-On the GIT create a project.
-Configure the project in order to accept an SSH key to access to this project.
+On the GIT create a project.     
+Configure the project in order to accept an SSH key to access to this project.     
 Store the files.   
 
 For CSV file:        
-    - File extension must be *.csv*
+    - File extension must be *.csv*    
     - CSV is ";" separated    
 For Excel extension must be *.xlsx*     
 
