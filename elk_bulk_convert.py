@@ -267,6 +267,7 @@ def main(argv):
         # Check if error encountered
         if ( str(rec[rec_action]['status']) != "201" and str(rec[rec_action]['status']) != "200" ):
           df.loc[(df['_id'] == rec_id),'action'] = "ERROR"
+          print ("[API ELK ERROR - "+str(now.strftime("%d/%m/%Y %H:%M:%S"))+"] status: "+str(rec[rec_action]['status'])+" - "+str(rec) )
         else:
           # Check if _id is known in the dataframe (csv or excel input file)
           if str(rec_id) in df['_id'].values :
