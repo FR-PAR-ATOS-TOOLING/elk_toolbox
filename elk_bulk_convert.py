@@ -49,9 +49,9 @@ verbose = 0                                # 1 for debugging mode
 infilename = "test.csv"    # CSV file with ';' separator
 outfilename = ""           # File with he bulk api command line to past and cut to ELK Dev Tool
 update = 0                 # 1 for update ELK index
-elkkey = ""
+elkkey = "" # API infra test
 cacert = ""
-url = ""
+url = "" # URL infra test
 outfile = ""
 CSVFILE = 0
 EXCELFILE = 0
@@ -128,7 +128,7 @@ def main(argv):
   if 'index' not in df.columns[0].lower():
     print ("ERROR First column of input file is not 'index'")
     exit (1)
-  if 'action' not in df.columns[1].lower():
+  if 'action' not in df.columns[1]:
     print ("ERROR Second column of input file is not 'action'")
     exit (1)
   if '_id' not in df.columns[2]:
@@ -154,11 +154,11 @@ def main(argv):
       print ("ERROR missing parameter for ELK update")
       exit (1)
   line = 0
-  nbr_update = 0
+  nbr_update = 0 # Number of records created, updated or deleted
   # We open the CSV file and we are going to read it line by line
   if (outfilename != '' ):
     outfile.write ('POST _bulk')
-
+  
   while line < total_line:
     # For each line we build the bulk API line for ELK
     first_line = ""         # to define if it's an update, create or delete
@@ -257,24 +257,33 @@ def main(argv):
       os.remove(tmpfilename)
       errorfile.close()
       exit(1)
-    # i is the CSV or Excel file line number
-    i = 0
-    # we read the JSON output answer to update _id if needed
+    # Setup a list with line in the csv where creation is requested without given an _id (let ELK give it in API respond)
+    empty_create_list = df.loc[((df['action'] == "create") & (df['_id'] == ""))].index.tolist() 
+    # we read the ELK API respond to update _id and set action to empty 
     for rec in curl_data['items']:
-      rec_action = list(rec)[0]
-      rec_id = str(rec[rec_action]['_id'])
+      rec_action = list(rec)[0]  # Get action from ELK API
+      rec_id = str(rec[rec_action]['_id'])  # Get ELK record _id from API respond
       if ( rec_action == "create" or rec_action == "update" ):
         # Check if error encountered
         if ( str(rec[rec_action]['status']) != "201" and str(rec[rec_action]['status']) != "200" ):
-          print ('[ERROR-'+str(rec[rec_action]['status'])+'] line '+ str(i+2) +' - _id: '+ str(rec[rec_action]['_id'])+' Check if \ or \\\ - ('+ str(rec[rec_action]['error']['caused_by']['reason'])+')')
           df.loc[(df['_id'] == rec_id),'action'] = "ERROR"
         else:
-          # After execution, the action is moved to empty in dataframe line where _id value is the same in the curl.out _id
-          df.loc[(df['_id'] == rec_id),'action'] = ""
-      i+=1
+          # Check if _id is known in the dataframe (csv or excel input file)
+          if str(rec_id) in df['_id'].values :
+            # Empty action field in dataframe because executed by ELK
+            df.loc[(df['_id'] == rec_id),'action'] = ""
+          else:
+            # For create only, if _id not find in dataframe we take the first create line and set the ELK _id
+            df.loc[empty_create_list[0], '_id'] = rec_id
+            # Now _id is setup in Dataframe and action can be erased because it was executed
+            df.loc[(df['_id'] == rec_id),'action'] = ""
+            if len(empty_create_list) > 1:
+              empty_create_list.pop(0)  # we removed the first line of updated line without _id in the dataframe
+    
     # At the end we remove all deleted line from the DataFrame
     indextodrop = df[ df['action'] == "delete"].index
     df.drop(indextodrop, inplace=True)
+    
     # DataFrame is stored in a temporary CSV file named output.csv
     if os.path.exists(infilename + '.bkp'):
       os.remove(infilename + '.bkp')
