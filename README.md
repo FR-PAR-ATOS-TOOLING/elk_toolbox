@@ -13,7 +13,11 @@ On the GITLAB create an access token for this project that we are going to use f
 Check the following prerequisites:    
    - GIT package must be installed       
    - Python 3 must be installed: python -V or python3-V     
+   - Package curl must be installed: curl -h
    - Following python module must be installed:     
+          - requests
+          - datetime
+          - pandas
  
 On the linux gateway server create a dedicated user:
 ```
@@ -29,9 +33,9 @@ Store the 2 scripts:
 
 Create a directory that will be synchronized with the GIT:     
 ```
-elk_git_file
+mkdir elk_git_file
 ```
-Goto this directory and clone the GIT project inside:
+Go to this directory and clone the GIT project inside:
 ```
 cd ~/elk_git_file
 git clone https://git.atosone.com/my_project/threshold_index.git
@@ -64,7 +68,47 @@ On Kibana:
 - Create API key and store the result in a secure location.    
 
 ### 4 - Linux server / finalization 
+On the Linux go to soft directory.
+Open script auto_update_via_git.sh and update the variables at the beginning:
+    - DIR_INDEX= location of the CSV and Excel file to check , ie: /home/automat/elk_git_file/threshold_index    
+    - APIKEY= ELK API key previously created     
+    - ELKSRV= IP or FQDN of the ELK node to use ie, hot node     
+    - CACRT= location of the ca.crt certificat to connect to ELK    
+ Create a test .csv file:
+ ```
+cat << EOF > test.csv
+_index;action;_id;type;scope;crit_priority;crit_value;warn_priority;warn_value;instance;category
+threshold;create;;my_type;my_scope;high;0.9;medium;0.8;my_instance;my_category
+EOF
+```
+ Test this file to see if access to ELK is ok:
+```
+python /home/automat/soft/elk_bulk_convert.py -c ca.crt -k NzdzWERuOEI1YTU4eU5UOGRTNEM6MVRNeGxzejFTVUM3M3R0b29zUkNiQQ== -t "https://localhost:9200" -f test.csv -v -u    
+```
+The feedback of the script in verbose (-v ) mode is:
+```
+------------------ START :  19/02/2022 14:43:30  ----------------------------
+[DEBUG]file in  =  test.csv
+[DEBUG]file out =
+[DEBUG]directory =
+[DEBUG]update =  1
+[DEBUG]url =  https://localhost:9200
+[DEBUG]key =  NzdzWERuOEI1YTU4eU5UOGRTNEM6MVRNeGxzejFTVUM3M3R0b29zUkNiQQ==
+[DEBUG]ca.crt file =  ca.crt
+-----------------------------------------------------------------------------
+[DEBUG]Number of lines   =  2
+[DEBUG]Number of columns =  12
+-----------------------------------------------------------------------------
+[DEBUG] Update requested (create/update/delete):  1
+-----------------------------------------------------------------------------
+[DEBUG]  curl -k --cacert ca.crt -H "Authorization: ApiKey NzdzWERuOEI1YTU4eU5UOGRTNEM6MVRNeGxzejFTVUM3M3R0b29zUkNiQQ==" -H "Content-Type: application/json" -X POST "https://localhost:9200/_bulk?pretty" --data-binary "@test.csv.tmp" > curl.out
+-----------------------------------------------------------------------------
+[DEBUG] Update initial file test.csv  after ELK bulk update
+[DEBUG] files curl.out and  test.csv.tmp  not deleted
+------------------- END:  19/02/2022 14:43:30   -----------------------------
+```
+In case of issue, try to execute the curl command given to see the result.    
 
-
+When everything is good, you can schedule every 5 minutes on the crontab the script  *auto_update_via_git.sh*.    
      
 > Written with [StackEdit](https://stackedit.io/).
