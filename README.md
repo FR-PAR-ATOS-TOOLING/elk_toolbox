@@ -1,51 +1,70 @@
 # Toolbox to manage an ELK index with CSV or Excel files
 
-## Technical architecture
-This solution needs:     
-- A GIT space to store the Excel or CSV files     
-- A Linux system able to access to the target ELK cluster and to GIT system     
-- An ELK cluster where the index will be store     
-- 2 scripts:     
-  * elk_bulk_convert.py to convert a CSV or Excel file into ELK API     
-  * auto_update_via_git.sh to run by CRON and pull new files from GIT       
-
 ## Setup the solution      
-On the GIT create a project.     
-Configure the project in order to accept an SSH key to access to this project.     
-Store the files.   
+### 1 - GITLAB    
+On the GITLAB, create a project where you will store the CSV or Excel files.    
+On the GITLAB create an access token for this project that we are going to use for push/pull:     
+    - Menu => Settings => Access Tokens    
+    - Give a token name which will be used as username with [token_name]_bot, ie: automat     
+    - Select write_repository authorization      
+    - Generate the token and secure it because it will be used later as password       
 
-For CSV file:        
-    - File extension must be *.csv*    
-    - CSV is ";" separated    
-For Excel extension must be *.xlsx*     
-
-
-> Written with [StackEdit](https://stackedit.io/).
-
-# elk_toolbox
-## python elk_bulk_convert.py
-**Goal**   
-Convert a CSV file into a file usable with ELK Dev Tools or update ELK index directly     
-
-**Prereq**   
-CSV file must be:     
-- First line = header with fields to add     
-- First column = ELK index to update     
-- Second column = action: create, update, delete or empty     
-(if empty and -u is selected the line will become 'update')    
-- Third column = ELK doc id mandatory for update and delete    
-
-**Options:**    
--? | --help	      : Show this help    
--v | --verbose    : Print to output some messages for debuging    
--f | --infile     : Input csv file name - Mandatory    
--o | --outfile    : Output file for drag and drop in DEV ELK, if empty output is Console    
--u | --update     : Update the ELK index in the cluster node (TLS must be activated in ELK)    
--c | --cacert     : ca.crt file for https ELK access [Mandatory if -u]    
--k | --key        : ELK API key with write role on target index [Mandatory if -u]   
--t | --url        : ELK url like https://localhost:9200 [Mandatory if -u]    
-
-Exemple:    
+### 2 - Linux server    
+Check the following prerequisites:    
+   - GIT package must be installed       
+   - Python 3 must be installed: python -V or python3-V     
+   - Following python module must be installed:     
+ 
+On the linux gateway server create a dedicated user:
 ```
-python elk_bulk_convert_csv.py -f "C:\\temp\\file.csv" -v -o out.out -u -k tyyvhbkjvhcgchfc -t https://localhost:9200 -c ca.crt
-```    
+useradd -c "Automation user" -d /home/automat -m automat
+```
+Create a directory for the script: 
+```
+mkdir soft
+```
+Store the 2 scripts:       
+  * elk_bulk_convert.py to convert a CSV or Excel file into ELK API       
+  * auto_update_via_git.sh to run by CRON and pull new files from GIT     
+
+Create a directory that will be synchronized with the GIT:     
+```
+elk_git_file
+```
+Goto this directory and clone the GIT project inside:
+```
+cd ~/elk_git_file
+git clone https://git.atosone.com/my_project/threshold_index.git
+Cloning into 'threshold_index'...
+Username for 'https://git.com': automat_bot
+Password for 'https://automat_bot@git.com': [automat_token]
+remote: Enumerating objects: 363, done.
+remote: Counting objects: 100% (97/97), done.
+remote: Compressing objects: 100% (54/54), done.
+remote: Total 363 (delta 56), reused 76 (delta 43), pack-reused 266
+Receiving objects: 100% (363/363), 167.56 KiB | 2.94 MiB/s, done.
+Resolving deltas: 100% (191/191), done.
+```
+REM: *in order to store the token locally execute the following git command:*
+```
+cd ~/elk_git_file/threshold_index
+git config credential.helper store
+```
+*Next time the username/password will be requested, they will be stored permanently encrypted in the .git local directory.*     
+
+### 3 - ELK / Kibana interface    
+Done with ELK version 7.16 or above.    
+We need to  create a index called "threshold".    
+We start by creating an API-KEY to allow read/write on this index.    
+On Kibana:
+- Menu => Management => Stack Management    
+- Security => API keys     
+- Give a name: automat_key    
+- Select "Restrict privileges", in the section indices, names replace * by threshold*.    
+- Create API key and store the result in a secure location.    
+
+### 4 - Linux server / finalization 
+
+
+     
+> Written with [StackEdit](https://stackedit.io/).
