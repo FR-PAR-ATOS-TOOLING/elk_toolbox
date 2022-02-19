@@ -237,12 +237,12 @@ def main(argv):
   if (update and nbr_update != 0):
     tmpfile.write("\n")
     tmpfile.close()
-    cmdline = 'curl -k -s --cacert ' + cacert + ' -H "Authorization: ApiKey ' + elkkey + '" -H "Content-Type: application/json" -X POST "'+ url +'/_bulk?pretty" --data-binary "@'+tmpfilename+'" > curl.out'
+    cmdline = '-k --cacert ' + cacert + ' -H "Authorization: ApiKey ' + elkkey + '" -H "Content-Type: application/json" -X POST "'+ url +'/_bulk?pretty" --data-binary "@'+tmpfilename+'" > curl.out'
     if (verbose):
-      print ("[DEBUG] ", cmdline)
+      print ("[DEBUG] curl ", cmdline)
       print ("-----------------------------------------------------------------------------")
     # Run of a curl command line with the bulk API. JSON ELK answer will be store into file curl.out
-    os.system(cmdline)
+    os.system("curl -s "+cmdline)
     # Open API respons in curl.out file
     curlout = open('curl.out')
     # We load the ELK JSON answer of the bulk API request
