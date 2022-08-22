@@ -164,7 +164,7 @@ def main(argv):
     first_line = ""         # to define if it's an update, create or delete
     second_line = "{"       # to setup all the fields after _id not used for delete
     # CREATE
-    if ( df.iloc[line,1] == 'create' ):
+    if ( df.iloc[line,1].lower() == 'create' ):
       nbr_update+=1
       if ( df.iloc[line,2] == '' ):
         first_line = '\n{"create" : {"_index":"'+ str(df.iloc[line,0]) +'"}}'
@@ -191,7 +191,7 @@ def main(argv):
         tmpfile.write( first_line)
         tmpfile.write( second_line)
     # UPDATE
-    elif ( df.iloc[line,1] == 'update' ):
+    elif ( df.iloc[line,1].lower() == 'update' ):
       nbr_update+=1
       first_line = '\n{"update" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
       second_line = '\n{"doc":{'
@@ -199,15 +199,20 @@ def main(argv):
       # Copy all remaining colums in the line
       while col < total_col:
         if not str(df.iloc[line,col]):
-          second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
+          # In case value is empty we set to 'null' for matching string, integer or float
+          second_line = second_line + '"'+ str(df.columns[col]) +'": null ,'  
         elif ( str(df.iloc[line,col])[0].isdigit() ):
+          # In case first character is a number, value will be passed without " to match a number
           second_line = second_line + '"'+ str(df.columns[col]) +'":'+ str(df.iloc[line,col])+ ','
         else:
+          # For any other case the value is a string and will be quoted
           second_line = second_line + '"'+ str(df.columns[col]) +'":"'+ str(df.iloc[line,col])+ '",'
         col+=1
+      
       # At the end we remove the last ',' and put '}'
       size = len(second_line)
       second_line = second_line[:size - 1] + '} }'
+
       if (outfilename != ''):
          outfile.write ( first_line )
          outfile.write ( second_line )
@@ -215,7 +220,7 @@ def main(argv):
         tmpfile.write( first_line)
         tmpfile.write( second_line)
     # DELETE
-    elif ( df.iloc[line,1] == 'delete' ):
+    elif ( df.iloc[line,1].lower() == 'delete' ):
       nbr_update+=1
       first_line = '\n{"delete" : {"_index":"'+ str(df.iloc[line,0]) +'","_id":"'+ str(df.iloc[line,2]) +'"}}'
       second_line = ''
@@ -312,4 +317,3 @@ def main(argv):
 if __name__ == "__main__":
   main(sys.argv[1:])
 ######################### END ############################
-
