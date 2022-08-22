@@ -9,9 +9,9 @@ On the GITLAB create an access token for this project that we are going to use f
     - Select write_repository authorization      
     - Generate the token and secure it because it will be used later as password       
 
-### 2 - Linux server    
+### 2 - Linux server (RedHat / CentOS)    
 Check the following prerequisites:    
-   - GIT package must be installed       
+   - GIT package must be installed: rpm -qa | grep git       
    - Python 3 must be installed: python -V or python3-V     
    - Package curl must be installed: curl -h
    - Following python module must be installed:     
@@ -110,5 +110,28 @@ The feedback of the script in verbose (-v ) mode is:
 In case of issue, try to execute the curl command given to see the result.    
 
 When everything is good, you can schedule every 5 minutes on the crontab the script  *auto_update_via_git.sh*.    
+
+## Threshold update use
+
+Mechanism is based on GIT and the server linux server able to do API Bulk to ELK Stack.      
+
+Inside the csv file only the 3rd fist colomns are mandatory:      
+
+- Fist column is "-index": the ELK index to update, for Sephora it's always "threshold"     
+- Second column is "action" the action to perform :
+	- If **empty** nothing is done,
+	- If **create**, the line is added and column 3 can be empty,
+	- If **update**, the line will update the record number given in column 3 (mandatory),
+ 	- If **delete**, the record number given in column 3 (mandatory) will be deleted from the index
+- Third column is "_id", the number inside is the index record uniq number mandatory for update and delete.
+
+After ELK index update, the file used is renamed with extension .bkp. This file can be used to restore data if needed.   
+A file with the same name is created and all action are columns are emptied except for line which were deleted, they are no longer in the file.    
+New files ".csv" and ".bkp" are git pushed back to the GIT repository and the comment of commit is the date of execution.    
+In case of issue during update, action column state could be replaced by ERROR. This means that an error occured when update was done.     
+In that case you find on linux server a file .tmp extension with not null size.    
+This file contain the line normally used by the ELK API Bulk to update index.     
+To test it to see why update failed, copy the content of the file to ELK Dev Tool Console and add before the line: `POST _bulk` and the content, or the line to test.
+
      
 > Written with [StackEdit](https://stackedit.io/).
